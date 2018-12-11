@@ -11,7 +11,7 @@ import (
 const (
   host     = "localhost"
   port     = 5432
-  user     = "lando	"
+  user     = "lando"
   password = "lando"
   dbname   = "lando"
 )
@@ -19,6 +19,42 @@ const (
 
 func handler(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
+}
+
+func setUpTables(db *sql.DB) {
+	fmt.Println("Setting up tables...")
+	tableCreationQueries := getCreationQueries()
+	for _, creationQuery := range tableCreationQueries {
+		fmt.Println(creationQuery)
+		_, err := db.Exec(creationQuery)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func loadFixtures(db *sql.DB) {
+	fmt.Println("Loading fixtures...")
+	fixtureQueries := getFixtureQueries()
+	for _, fixtureQuery := range fixtureQueries {
+		fmt.Println(fixtureQuery)
+		_, err := db.Exec(fixtureQuery)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func tearDownTables(db *sql.DB) {
+	fmt.Println("Tearing down previous tables...")
+	tableDeletionQueries := getDeletionQueries()
+	for _, deletionQuery := range tableDeletionQueries {
+		fmt.Println(deletionQuery)
+		_, err := db.Exec(deletionQuery)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func main() {
@@ -35,7 +71,14 @@ func main() {
 	if err != nil {
 	  panic(err)
 	}
+	// at this point, have correctly connected to database!
 
+	// let's start setting up some tables:
+    tearDownTables(db)
+	setUpTables(db)
+	loadFixtures(db)
 
+	fmt.Println("Starting up server...")
     log.Fatal(http.ListenAndServe(":8080", nil))
+
 }
